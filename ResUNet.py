@@ -185,3 +185,5 @@ class ResUnet(nn.Module):
         out = self.out_layer(x10)
 
         return out
+
+# gmodel = ResUnet(3)

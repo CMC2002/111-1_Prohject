@@ -1,15 +1,29 @@
 import Functions as func
-import Unet as U
 import numpy as np
 import torch.optim as optim
 import torch
+from dataset import dataset
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torchvision import datasets, models, transforms
+import torchvision
+from torchvision.models.segmentation import fcn_resnet50, FCN_ResNet50_Weights
+from torchvision.models import ResNet50_Weights
+from ResUNet import ResUnet
+import Unet_ as unet
+import torchmetrics as tm
+from ResNet import resnet50
 
-device = 'cude'
-learning_rate = 0.1
-batch_size = 32
+device = 'cuda'
+learning_rate = 0.001
+batch_size = 64
 
-gmodel = U.UNet()
-gmodel = gmodel.to(device)
+train_loader, valid_loader = dataset(batch_size= batch_size)
+
+gmodel = resnet50(3, 2)
+# gmodel = unet.UNet(3, 2)
+gmodel = gmodel.to(device= device, dtype= torch.float)
 loss_f = func.DiceLoss()
 opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
 
@@ -47,62 +61,85 @@ def train(epoch, model, train_loader):
     train_loss = 0
 
     for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
+       
+        '''
+        if batch_idx == 31:
+            break
+        '''
+
         data, target = data.to(device), target.to(device)
         opt.zero_grad()
-        output = model(data)
+        output = model(data.float())
+        # print(output.size(), data.size(), target.size())
         loss = loss_f(output, target)
         loss.backward()
         opt.step()
 
         train_loss += loss.item()
-        correct += func.dice_coeff(output, target).sum.item()
-        
-        '''
-        if batch_idx % 10 == 0:
-           print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx *len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item()))
-        '''
+        correct += func.dice_coeff(output, target).item()
+        # print(func.dice_coeff(output, target).item(), func.dice(output, target).item()
 
-        train_loss /= len(train_loader.dataset)
-        print('\nTraining  set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
-            train_loss, correct, len(train_loader.dataset),
-            100. * correct / len(train_loader.dataset)))
-        train_loss /= len(train_loader.dataset)
-        trainloss.append(train_loss)
-        trainaccu.append(correct / len(train_loader.dataset))
+    train_loss /= len(train_loader.dataset)
 
+    print('\nTraining  set: Average dice loss: {:.7f}, Acerage Dice Coefficient: {:.4f}'.format(
+        train_loss, correct, len(train_loader.dataset),
+        correct / len(train_loader.dataset)))
+    trainloss.append(train_loss)
+    trainaccu.append(correct / len(train_loader.dataset))
 
+valid_output = []
 def valid(model, valid_loader, valid_output= []):
     model.eval()
     valid_loss = 0
     correct = 0
     loss = []
-    ##global valid_output
-    ##valid_output = []
+    valid_output = []
 
+    ## it = 0
     for data, target in tqdm(valid_loader):
-        # data, target = Variable(data, volatile = True), Variable(target)
+
+        '''
+        if it == 11:
+            break
+        it += 1
+        '''
+
         data, target = data.to(device), target.to(device)
         output = model(data)
         valid_output.append(output.detach().cpu().numpy())
         # Sum up vatch loss
         valid_loss += loss_f(output, target).data.item()
         correct += func.dice_coeff(output, target).sum().item()
+    
     valid_loss /= len(valid_loader.dataset)
-    print('Validation  set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    print('Validation  set: Average Dice loss: {:.7f}, Average Dice Coefficient: {:.4f}\n'.format(
         valid_loss, correct, len(valid_loader.dataset),
-        100. * correct / len(valid_loader.dataset)))
+        correct / len(valid_loader.dataset)))
     validloss.append(valid_loss)
     validaccu.append(correct / len(valid_loader.dataset))
-    valid_output = np.concatenate(valid_output)
+    # valid_output = np.concatenate(valid_output)
+
+print(len(train_loader), len(valid_loader))
 
 num_iter= 2
 for epoch in range(0, num_iter):
-    train(epoch, gmodel)
+    train(epoch, gmodel, train_loader)
     i = len(validloss)
-    valid(gmodel)
-    if validloss[i] > validloss[i-1]:
+    valid(gmodel, train_loader)
+    if validloss[i] > validloss[i-1] + 0.1:
         print("Validation Loss increased")
         break
+<<<<<<< Updated upstream
+
+torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
+
+import csv
+with open("/home/b09508011/model/output.csv", 'w', newline='') as f:
+    w = csv.writer(f)
+    w.writerow(trainloss)
+    w.writerow(validloss)
+    w.writerow(trainloss)
+    w.writerow(validloss)
+=======
 ##torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "./model/checkpoint.ckpt")
+>>>>>>> Stashed changes
