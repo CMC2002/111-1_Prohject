@@ -1,9 +1,12 @@
 from perlin_noise import PerlinNoise
+import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image
 
-def perlin(img):
+def perlin():
     noise = PerlinNoise(octaves= 2)
-    mask = [[noise([i*0.01, j*0.01]) for j in range(img.shape[0])] for i in range(img.shape[1])]
+    mask = [[noise([i*0.01, j*0.01]) for j in range(192)] for i in range(192)]
+    mask = np.array(mask)
 
     return mask
 

@@ -10,6 +10,7 @@ import torch.utils.data as data
 from numpy import load
 import random
 import cv2
+import preprocessing_tool.noise as noise
 
 class brainDataset(Dataset):
     def __init__(self, root, transform):
@@ -36,6 +37,7 @@ class brainDataset(Dataset):
                 label.append((dirname, filename))
 
         self.lab = label
+        self.mask = noise.perlin()
 
         assert len(self.img) == len(self.lab), 'mismatched length!'
         
@@ -48,6 +50,7 @@ class brainDataset(Dataset):
         imgpath = self.lab[index]
         label  = load(os.path.join(imgpath[0], imgpath[1]))
        
+        image = image + self.mask
         image_ = Image.fromarray(image)
         label_ = Image.fromarray(label)
 
@@ -98,16 +101,17 @@ def dataset(batch_size= 16):
     valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform)
 
 
-    print(len(train_set))
+    ## print(len(train_set), len(valid_set))
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)
     valid_loader = DataLoader(dataset= valid_set, batch_size= batch_size, shuffle= False)
     
     return train_loader, valid_loader
-
+'''
 
 train, valid = dataset(batch_size= 32)
-'''
-## print("dataloader", len(train), len(valid))
+
+print("dataloader", len(train), len(valid))
+
 for idx, (data, target) in enumerate(train):
    print(data.size(), target.size()) 
 '''

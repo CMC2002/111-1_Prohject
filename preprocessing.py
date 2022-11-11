@@ -51,7 +51,7 @@ def augmentation(img):
 
     ## img = ed.Roberts(img)
 
-    img = his.his_equal(img_)
+    img_ = his.his_equal(img_)
 
     img_ += noise.perlin(img_)
     return img_
