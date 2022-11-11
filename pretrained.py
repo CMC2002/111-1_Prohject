@@ -46,8 +46,11 @@ batch_size = 64
 
 train_loader, valid_loader = dataset(batch_size= batch_size)
 
+gmodel = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
+        in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
+
 ## gmodel = resnet50(3, 1)
-gmodel = unet.UNet(3, 1)
+## gmodel = unet.UNet(3, 1)
 gmodel = gmodel.to(device= device, dtype= torch.float)
 loss_f = func.DiceBCELoss()
 opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
