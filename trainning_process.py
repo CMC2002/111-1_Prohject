@@ -14,17 +14,42 @@ from ResUNet import ResUnet
 import Unet_ as unet
 import torchmetrics as tm
 from ResNet import resnet50
+import csv
+import pandas as pd
+
+def load_(root):
+    Data = pd.read_csv(root, delimiter= ',', encoding= 'utf-8', header= None)
+    data = Data.to_numpy()
+    trainloss = []
+    validloss = []
+    trainaccu = []
+    validaccu = []
+
+    for i in range(0, np.size(data, axis= 1)):
+        trainloss.append(data[0][i])
+        validloss.append(data[1][i])
+        trainaccu.append(data[2][i])
+        validaccu.append(data[3][i])
+    
+    return trainloss, validloss, trainaccu, validaccu
+
+def loadmodel(root, device):
+    checkpoint = torch.load(root, map_location= device)
+    model_state, optimizer_state = checkpoint["model"], checkpoint["optimizer"]
+    model.load_state_dict(modelstate)
+    optimizer.load_state_dict(optimizer_state)
+    return model, optimizer
 
 device = 'cuda'
-learning_rate = 0.001
+learning_rate = 0.1
 batch_size = 64
 
 train_loader, valid_loader = dataset(batch_size= batch_size)
 
-gmodel = resnet50(3, 2)
-# gmodel = unet.UNet(3, 2)
+## gmodel = resnet50(3, 1)
+gmodel = unet.UNet(3, 1)
 gmodel = gmodel.to(device= device, dtype= torch.float)
-loss_f = func.DiceLoss()
+loss_f = func.DiceBCELoss()
 opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
 
 trainloss = []
@@ -32,18 +57,8 @@ validloss = []
 trainaccu = []
 validaccu = []
 
-'''
-import csv
-import pandas as pd
-Data = pd.read_csv('./model/output.csv', delimiter= ',', encoding= 'utf-8', header= None)
-data = Data.to_numpy()
-for i in range(0, np.size(data, axis= 1)):
-  trainloss.append(data[0][i])
-  validloss.append(data[1][i])
-for i in range(0, np.size(data, axis= 1)):
-  trainaccu.append(data[2][i])
-  validaccu.append(data[3][i])
-'''
+# gmodel, opt = loadmodel("/home/b09508011/model/checkpoint.ckpt", device= device)
+# trainloss, validloss, trainaccu, validaccu = load_("/home/b09508011/model/output.csv")
 
 from tqdm import tqdm
 
@@ -59,13 +74,14 @@ def train(epoch, model, train_loader):
     model.train()
     correct = 0
     train_loss = 0
+    IDX = 0
 
     for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
-       
         '''
         if batch_idx == 31:
             break
         '''
+        IDX = batch_idx
 
         data, target = data.to(device), target.to(device)
         opt.zero_grad()
@@ -79,13 +95,13 @@ def train(epoch, model, train_loader):
         correct += func.dice_coeff(output, target).item()
         # print(func.dice_coeff(output, target).item(), func.dice(output, target).item()
 
-    train_loss /= len(train_loader.dataset)
+    train_loss /= IDX + 1
 
-    print('\nTraining  set: Average dice loss: {:.7f}, Acerage Dice Coefficient: {:.4f}'.format(
-        train_loss, correct, len(train_loader.dataset),
-        correct / len(train_loader.dataset)))
+    print('Training  set: Loss: {:.7f}, Dice Coefficient: {:.4f}\n'.format(
+        train_loss , correct / (IDX + 1)))
+    
     trainloss.append(train_loss)
-    trainaccu.append(correct / len(train_loader.dataset))
+    trainaccu.append(correct / (IDX+1))
 
 valid_output = []
 def valid(model, valid_loader, valid_output= []):
@@ -95,14 +111,14 @@ def valid(model, valid_loader, valid_output= []):
     loss = []
     valid_output = []
 
-    ## it = 0
+    IDX = 0
+    it = 0
     for data, target in tqdm(valid_loader):
-
         '''
         if it == 11:
             break
+        '''    
         it += 1
-        '''
 
         data, target = data.to(device), target.to(device)
         output = model(data)
@@ -113,24 +129,25 @@ def valid(model, valid_loader, valid_output= []):
     
     valid_loss /= len(valid_loader.dataset)
     print('Validation  set: Average Dice loss: {:.7f}, Average Dice Coefficient: {:.4f}\n'.format(
-        valid_loss, correct, len(valid_loader.dataset),
-        correct / len(valid_loader.dataset)))
+        valid_loss, correct / it))
+
     validloss.append(valid_loss)
-    validaccu.append(correct / len(valid_loader.dataset))
+    validaccu.append(correct / it)
     # valid_output = np.concatenate(valid_output)
 
-print(len(train_loader), len(valid_loader))
+# print(len(train_loader), len(valid_loader))
 
-num_iter= 2
+num_iter= 5
 for epoch in range(0, num_iter):
     train(epoch, gmodel, train_loader)
     i = len(validloss)
-    valid(gmodel, train_loader)
-    if validloss[i] > validloss[i-1] + 0.1:
+    valid(gmodel, valid_loader)
+
+    '''
+    if validloss[i] > validloss[i-1] - 0.01:
         print("Validation Loss increased")
         break
-<<<<<<< Updated upstream
-
+    '''
 torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
 
 import csv
@@ -138,8 +155,7 @@ with open("/home/b09508011/model/output.csv", 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(trainloss)
     w.writerow(validloss)
-    w.writerow(trainloss)
-    w.writerow(validloss)
-=======
+    w.writerow(trainaccu)
+    w.writerow(validaccu)
+
 ##torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "./model/checkpoint.ckpt")
->>>>>>> Stashed changes

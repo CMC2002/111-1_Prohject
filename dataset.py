@@ -63,6 +63,7 @@ class brainDataset(Dataset):
         transf = trans.Normalize(mean= 1, std= 1)
         images = transf(images)
 
+        '''
         labe_ = np.zeros(labels.shape, dtype= int)
         labels_ = torch.from_numpy(labe_)
 
@@ -74,8 +75,9 @@ class brainDataset(Dataset):
                     labels_[0][i][j] = 0 
    
         labels = torch.concat((labels, labels_), dim= 0)    
+        
         labels = labels.int()
-
+        '''        
         return images, labels
 
     def __len__(self):
@@ -94,8 +96,8 @@ def dataset(batch_size= 16):
         trans.Resize([192, 192]),
         trans.ToTensor()])
 
-    train_set = brainDataset(root= "/home/b09508011/111-1_Project/train", transform= train_transform)
-    valid_set = brainDataset(root= "/home/b09508011/111-1_Project/valid", transform= valid_transform)
+    train_set = brainDataset(root= "/home/b09508011/train", transform= train_transform)
+    valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform)
 
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)
     valid_loader = DataLoader(dataset= valid_set, batch_size= batch_size, shuffle= False)
@@ -104,7 +106,7 @@ def dataset(batch_size= 16):
 
 '''
 train, valid = dataset(batch_size= 32)
-print("dataloader", len(train), len(valid))
+## print("dataloader", len(train), len(valid))
 for idx, (data, target) in enumerate(train):
    print(data.size(), target.size()) 
 '''
