@@ -86,8 +86,6 @@ class brainDataset(Dataset):
 def dataset(batch_size= 16):
 
     train_transform = trans.Compose([
-        trans.RandomHorizontalFlip(),
-        trans.RandomVerticalFlip(),
         trans.Grayscale(num_output_channels= 1),
         trans.Resize([192, 192]),
         trans.ToTensor()])
@@ -99,13 +97,16 @@ def dataset(batch_size= 16):
     train_set = brainDataset(root= "/home/b09508011/train", transform= train_transform)
     valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform)
 
+
+    print(len(train_set))
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)
     valid_loader = DataLoader(dataset= valid_set, batch_size= batch_size, shuffle= False)
     
     return train_loader, valid_loader
 
-'''
+
 train, valid = dataset(batch_size= 32)
+'''
 ## print("dataloader", len(train), len(valid))
 for idx, (data, target) in enumerate(train):
    print(data.size(), target.size()) 
