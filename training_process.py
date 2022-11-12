@@ -40,15 +40,15 @@ def loadmodel(root, device):
     optimizer.load_state_dict(optimizer_state)
     return model, optimizer
 
-device = 'cuda'
-learning_rate = 0.001
+device = 'cuda:1'
+learning_rate = 0.0001
 batch_size = 64
 
 train_loader, valid_loader = dataset(batch_size= batch_size)
 
 ## gmodel = resnet50(3, 1)
 gmodel = unet.UNet(3, 1)
-gmodel = gmodel.to(device= device, dtype= torch.float)
+gmodel = gmodel.to(device= device)
 loss_f = func.DiceBCELoss()
 opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
 
@@ -137,7 +137,7 @@ def valid(model, valid_loader, valid_output= []):
 
 # print(len(train_loader), len(valid_loader))
 
-num_iter= 5
+num_iter= 15
 for epoch in range(0, num_iter):
     train(epoch, gmodel, train_loader)
     i = len(validloss)

@@ -37,7 +37,6 @@ class brainDataset(Dataset):
                 label.append((dirname, filename))
 
         self.lab = label
-        self.mask = noise.perlin()
 
         assert len(self.img) == len(self.lab), 'mismatched length!'
         
@@ -50,7 +49,6 @@ class brainDataset(Dataset):
         imgpath = self.lab[index]
         label  = load(os.path.join(imgpath[0], imgpath[1]))
        
-        image = image + self.mask
         image_ = Image.fromarray(image)
         label_ = Image.fromarray(label)
 
@@ -88,8 +86,10 @@ class brainDataset(Dataset):
 
 def dataset(batch_size= 16):
 
+    mask = noise.perlin()
     train_transform = trans.Compose([
         trans.Grayscale(num_output_channels= 1),
+        trans.Lambda(lambda img: Image.fromarray(np.array(img) + mask)),
         trans.Resize([192, 192]),
         trans.ToTensor()])
 
@@ -106,12 +106,13 @@ def dataset(batch_size= 16):
     valid_loader = DataLoader(dataset= valid_set, batch_size= batch_size, shuffle= False)
     
     return train_loader, valid_loader
-'''
 
 train, valid = dataset(batch_size= 32)
 
 print("dataloader", len(train), len(valid))
 
 for idx, (data, target) in enumerate(train):
-   print(data.size(), target.size()) 
-'''
+    data = data.to('cuda:1')
+    target = target.to('cuda:1')
+    print(data.size(), target.size()) 
+

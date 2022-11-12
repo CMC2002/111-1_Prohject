@@ -44,7 +44,7 @@ device = 'cuda'
 learning_rate = 0.1
 batch_size = 64
 
-train_loader, valid_loader = dataset(batch_size= batch_size, preprocess= True)
+train_loader, valid_loader = dataset(batch_size= batch_size)
 
 gmodel = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
         in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
