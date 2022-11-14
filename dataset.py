@@ -106,7 +106,7 @@ def dataset(batch_size= 16):
     valid_loader = DataLoader(dataset= valid_set, batch_size= batch_size, shuffle= False)
     
     return train_loader, valid_loader
-
+'''
 train, valid = dataset(batch_size= 32)
 
 print("dataloader", len(train), len(valid))
@@ -115,4 +115,4 @@ for idx, (data, target) in enumerate(train):
     data = data.to('cuda:1')
     target = target.to('cuda:1')
     print(data.size(), target.size()) 
-
+'''

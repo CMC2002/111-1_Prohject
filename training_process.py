@@ -40,7 +40,7 @@ def loadmodel(root, device):
     optimizer.load_state_dict(optimizer_state)
     return model, optimizer
 
-device = 'cuda:1'
+device = 'cuda'
 learning_rate = 0.0001
 batch_size = 64
 
