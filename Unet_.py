@@ -99,3 +99,10 @@ class UNet(nn.Module):
         logits = self.outc(x)
         return logits
 
+'''
+model = UNet(3, 1)
+model = model.to('cuda')
+from torchsummary import summary
+summary_ = summary(model, (3, 192, 192))
+print(summary_)
+'''

@@ -19,8 +19,8 @@ class DiceBCELoss(nn.Module):
         inputs = torch.sigmoid(inputs)       
         
         #flatten label and prediction tensors
-        inputs = inputs.view(-1)
-        targets = targets.view(-1)
+        inputs = abs(inputs.view(-1))
+        targets = abs(targets.view(-1))
         
         intersection = (inputs * targets).sum()                            
         dice_loss = 1 - (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
@@ -38,8 +38,8 @@ def dice_coeff(preds, targets):
     preds = torch.sigmoid(preds)
     
     #flatten label and prediction tensors
-    preds = preds.view(-1)
-    targets = targets.view(-1)
+    preds = abs(preds.view(-1))
+    targets = abs(targets.view(-1))
 
     intersection = (preds * targets).sum()
     dice = (2.*intersection + smooth)/(preds.sum() + targets.sum() + smooth)
@@ -47,6 +47,21 @@ def dice_coeff(preds, targets):
     return dice
 
 # Dice
+class DiceLoss(nn.Module):
+
+    def __init__(self):
+        super(DiceLoss, self).__init__()
+        self.smooth = 1.0
+
+    def forward(self, y_pred, y_true):
+        assert y_pred.size() == y_true.size()
+        y_pred = y_pred[:, 0].contiguous().view(-1)
+        y_true = y_true[:, 0].contiguous().view(-1)
+        intersection = (y_pred * y_true).sum()
+        dsc = (2. * intersection + self.smooth) / (
+            y_pred.sum() + y_true.sum() + self.smooth
+        )
+        return 1. - dsc
 '''
 def dice_(pred, target):
 

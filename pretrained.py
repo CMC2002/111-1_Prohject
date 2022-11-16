@@ -11,7 +11,6 @@ import torchvision
 from torchvision.models.segmentation import fcn_resnet50, FCN_ResNet50_Weights
 from torchvision.models import ResNet50_Weights
 from ResUNet import ResUnet
-import Unet_ as unet
 import torchmetrics as tm
 from ResNet import resnet50
 import csv
@@ -41,7 +40,7 @@ def loadmodel(root, device):
     return model, optimizer
 
 device = 'cuda'
-learning_rate = 0.1
+learning_rate = 0.00001
 batch_size = 64
 
 train_loader, valid_loader = dataset(batch_size= batch_size)
@@ -52,8 +51,8 @@ gmodel = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
 ## gmodel = resnet50(3, 1)
 ## gmodel = unet.UNet(3, 1)
 gmodel = gmodel.to(device= device, dtype= torch.float)
-loss_f = func.DiceBCELoss()
-opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
+loss_f = func.DiceLoss()
+opt = optim.SGD(gmodel.parameters(), lr= learning_rate)
 
 trainloss = []
 validloss = []
@@ -64,6 +63,9 @@ validaccu = []
 # trainloss, validloss, trainaccu, validaccu = load_("/home/b09508011/model/output.csv")
 
 from tqdm import tqdm
+
+def update_function(param, grad, learning_rate):
+    return param - learning_rate * grad
 
 def train(epoch, model, train_loader):
     '''
@@ -85,19 +87,24 @@ def train(epoch, model, train_loader):
             break
         '''
         IDX = batch_idx
-
         data, target = data.to(device), target.to(device)
+        
         opt.zero_grad()
         output = model(data.float())
         # print(output.size(), data.size(), target.size())
+        a = list(model.parameters())[0]
         loss = loss_f(output, target)
         loss.backward()
         opt.step()
+        
+        b = list(model.parameters())[0]
+        print(torch.equal(a.data, b.data))
 
         train_loss += loss.item()
         correct += func.dice_coeff(output, target).item()
         # print(func.dice_coeff(output, target).item(), func.dice(output, target).item()
 
+    print(train_loss, correct)
     train_loss /= IDX + 1
 
     print('Training  set: Loss: {:.7f}, Dice Coefficient: {:.4f}\n'.format(
@@ -114,7 +121,6 @@ def valid(model, valid_loader, valid_output= []):
     loss = []
     valid_output = []
 
-    IDX = 0
     it = 0
     for data, target in tqdm(valid_loader):
         '''
@@ -129,8 +135,9 @@ def valid(model, valid_loader, valid_output= []):
         # Sum up vatch loss
         valid_loss += loss_f(output, target).data.item()
         correct += func.dice_coeff(output, target).sum().item()
-    
-    valid_loss /= len(valid_loader.dataset)
+
+    print(valid_loss, correct)
+    valid_loss /= it
     print('Validation  set: Average Dice loss: {:.7f}, Average Dice Coefficient: {:.4f}\n'.format(
         valid_loss, correct / it))
 
@@ -151,10 +158,10 @@ for epoch in range(0, num_iter):
         print("Validation Loss increased")
         break
     '''
-torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
+torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "/home/b09508011/pretrain_model/checkpoint.ckpt")
 
 import csv
-with open("/home/b09508011/model/output.csv", 'w', newline='') as f:
+with open("/home/b09508011/model/pretrain_output.csv", 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(trainloss)
     w.writerow(validloss)

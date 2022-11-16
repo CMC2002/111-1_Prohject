@@ -10,10 +10,10 @@ from torchvision import datasets, models, transforms
 import torchvision
 from torchvision.models.segmentation import fcn_resnet50, FCN_ResNet50_Weights
 from torchvision.models import ResNet50_Weights
-from ResUNet import ResUnet
 import Unet_ as unet
 import torchmetrics as tm
-from ResNet import resnet50
+from ResUnet import ResUnet
+from ResUnet_plus import ResUnetPlusPlus
 import csv
 import pandas as pd
 
@@ -41,13 +41,14 @@ def loadmodel(root, device):
     return model, optimizer
 
 device = 'cuda'
-learning_rate = 0.0001
+learning_rate = 0.00001
 batch_size = 64
 
 train_loader, valid_loader = dataset(batch_size= batch_size)
 
-## gmodel = resnet50(3, 1)
-gmodel = unet.UNet(3, 1)
+## gmodel = unet.UNet(3, 1)
+## gmodel = ResUnet(3)
+gmodel = ResUnetPlusPlus(3)
 gmodel = gmodel.to(device= device)
 loss_f = func.DiceBCELoss()
 opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
@@ -86,10 +87,17 @@ def train(epoch, model, train_loader):
         data, target = data.to(device), target.to(device)
         opt.zero_grad()
         output = model(data.float())
+        
         # print(output.size(), data.size(), target.size())
         loss = loss_f(output, target)
+        a = list(model.parameters())[0]
         loss.backward()
         opt.step()
+        with torch.no_grad():
+            output = model(data)
+    
+        b = list(model.parameters())[0]
+        print(torch.equal(a.data, b.data))
 
         train_loss += loss.item()
         correct += func.dice_coeff(output, target).item()
