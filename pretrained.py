@@ -37,21 +37,6 @@ def loadmodel(root, device):
     optimizer.load_state_dict(optimizer_state)
     return model, optimizer
 
-device = 'cuda'
-learning_rate = 0.00001
-batch_size = 64
-
-train_loader, valid_loader = dataset(batch_size= batch_size)
-
-gmodel = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
-        in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
-
-## gmodel = resnet50(3, 1)
-## gmodel = unet.UNet(3, 1)
-gmodel = gmodel.to(device= device, dtype= torch.float)
-loss_f = func.DiceLoss()
-opt = optim.SGD(gmodel.parameters(), lr= learning_rate)
-
 trainloss = []
 validloss = []
 trainaccu = []
@@ -62,10 +47,10 @@ validaccu = []
 
 from tqdm import tqdm
 
-def update_function(param, grad, learning_rate):
+def  update_function(param, grad, learning_rate):
     return param - learning_rate * grad
 
-def train(epoch, model, train_loader):
+def train(epoch, model, opt, train_loader):
     '''
     if epoch == 0:
       checkpoint=torch.load("./model/checkpoint.ckpt",map_location=device)
@@ -87,18 +72,22 @@ def train(epoch, model, train_loader):
         IDX = batch_idx
         data, target = data.to(device), target.to(device)
         
-        opt.zero_grad()
         output = model(data.float())
         # print(output.size(), data.size(), target.size())
-        a = list(model.parameters())[0]
-        ## loss = loss_f(output, target)
-        loss = output.sum()
-        print(loss.retain_grad())
+        a = list(model.parameters())[5]
+        
+        loss = criterion(output, target)
+
+        opt.zero_grad()
+        ## loss = output.sum()
         loss.backward()
+        grad_norm = nn.utils.clip_grad_norm_(model.parameters(), max_norm = 10)
+
         opt.step()
-        print(loss.retain_grad())
-        b = list(model.parameters())[0]
-        print(torch.equal(a.data, b.data))
+        print("gradient", list(model.parameters())[5].grad[0]) 
+        b = list(model.parameters())[5]
+
+        print("a ", a.data[0], "\nb ", b.data[0])
 
         train_loss += loss.item()
         correct += func.dice_coeff(output, target).item()
@@ -116,8 +105,8 @@ def train(epoch, model, train_loader):
 valid_output = []
 def valid(model, valid_loader, valid_output= []):
     model.eval()
-    valid_loss = 0
-    correct = 0
+    valid_loss = []
+    correct = []
     loss = []
     valid_output = []
 
@@ -128,44 +117,80 @@ def valid(model, valid_loader, valid_output= []):
             break
         '''    
         it += 1
-
-        data, target = data.to(device), target.to(device)
-        output = model(data)
-        valid_output.append(output.detach().cpu().numpy())
+            
+        with torch.no_grad():
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+        
+        loss = criterion(output, target)
         # Sum up vatch loss
-        valid_loss += loss_f(output, target).data.item()
-        correct += func.dice_coeff(output, target).sum().item()
+        valid_loss.append(loss.item())
+        correct.append(func.dice_coeff(output, target).sum().item())
 
-    print(valid_loss, correct)
-    valid_loss /= it
+    valid_loss = sum(valid_loss) / len(valid_loss)
+    correct = sum(correct) / len(correct)
     print('Validation  set: Average Dice loss: {:.7f}, Average Dice Coefficient: {:.4f}\n'.format(
-        valid_loss, correct / it))
+        valid_loss, correct))
 
     validloss.append(valid_loss)
-    validaccu.append(correct / it)
+    validaccu.append(correct)
     # valid_output = np.concatenate(valid_output)
 
 # print(len(train_loader), len(valid_loader))
 
-num_iter= 5
+myseed = 2
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(myseed)
+torch.manual_seed(myseed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(myseed)
+
+batch_size = 32
+train_loader, valid_loader = dataset(batch_size= batch_size)
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+learning_rate = 0.001
+patience = 5
+
+gmodel = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
+        in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
+
+## gmodel = resnet50(3, 1)
+## gmodel = unet.UNet(3, 1)
+gmodel = gmodel.to(device= device, dtype= torch.float)
+
+criterion = func.DiceLoss()
+gopt = optim.AdamW(gmodel.parameters(), lr= learning_rate, weight_decay = 1e-5)
+stale = 0
+best_acc = 0
+
+num_iter= 50
 for epoch in range(0, num_iter):
-    train(epoch, gmodel, train_loader)
+    print("Epoch: ", epoch)
+    train(epoch, gmodel, gopt, train_loader)
     i = len(validloss)
     valid(gmodel, valid_loader)
-
-    '''
-    if validloss[i] > validloss[i-1] - 0.01:
-        print("Validation Loss increased")
-        break
-    '''
-torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "/home/b09508011/pretrain_model/checkpoint.ckpt")
+    if validaccu[i - 1] > best_acc:
+        print(f"Best model found at epoch {epoch}, save model")
+        torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "/home/mmio/Junior/model/pretrained_checkpoint.ckpt")
+        best_accu = validaccu[i - 1]
+        stale = 0
+    else:
+        stale += 1
+        if stale > patience:
+            print(f"No improvemetn {patience} consecutive epochs, early stopping")
+            break
+ 
+    
+    
+    
+torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "/home/mmio/Junior/model/pretrained_checkpoint.ckpt")
 
 import csv
-with open("/home/b09508011/model/pretrain_output.csv", 'w', newline='') as f:
+with open("/home/mmio/Juniors/model/pretrain_output.csv", 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(trainloss)
     w.writerow(validloss)
     w.writerow(trainaccu)
     w.writerow(validaccu)
-
-##torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "./model/checkpoint.ckpt")

@@ -38,135 +38,120 @@ def loadmodel(root, device):
     optimizer.load_state_dict(optimizer_state)
     return model, optimizer
 
-device = "cuda"
+myseed = 2  # set a random seed for reproducibility
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(myseed)
+torch.manual_seed(myseed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(myseed)
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(device)
 batch_size = 32
 train_loader, valid_loader = dataset(batch_size= batch_size)
 
-## loss_f = func.DiceLoss()
-loss_f = func.FocalLoss()
+criterion = func.DiceLoss()
+## loss_f = func.FocalLoss()
 
 trainloss = []
 validloss = []
 trainaccu = []
 validaccu = []
 
-# gmodel, opt = loadmodel("/home/meng/model/checkpoint.ckpt", device= device)
-# trainloss, validloss, trainaccu, validaccu = load_("/home/meng/model/output.csv")
+# model, opt = loadmodel("/home/mmio/Juniors/model/checkpoint.ckpt", device= device)
+# trainloss, validloss, trainaccu, validaccu = load_("/home/mmio/Juniors/model/output.csv")
 
 from tqdm import tqdm
-
-def train(epoch, model, opt, train_loader):
-    '''
-    if epoch == 0:
-      checkpoint=torch.load("./model/checkpoint.ckpt",map_location=device)
-      model_state, optimizer_state = checkpoint["model"], checkpoint["optimizer"]
-      model.load_state_dict(model_state)
-      optimizer.load_state_dict(optimizer_state)
-    '''
-
-    model.train()
-    correct = 0
-    train_loss = 0
-    IDX = 0
-
-    for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
-        '''
-        if batch_idx == 31:
-            break
-        '''
-        
-        IDX = batch_idx
-
-        data, target = data.to(device), target.to(device)
-        output = model(data)
-        ## print(list(model.parameters())[-1][0].data)
-        ## print(list(model.parameters())[0][0].grad)
-        loss = loss_f(output, target)
-        ## a = list(model.parameters())[5]
-        opt.zero_grad()
-        loss.backward()
-        grad_norm = nn.utils.clip_grad_norm_(model.parameters(), max_norm = 10)
-        opt.step()
-        ## print(list(model.parameters())[-1][0].data)
-        ## print("Gradient", list(model.parameters())[5].grad)
-        ## b = list(model.parameters())[5]
-        ## print("is equal", torch.equal(a.data, b.data))
-        ## print(a, "\n",b)
-        train_loss += loss.item()
-        correct += func.dice_coeff(output, target).item()
-        # print(func.dice_coeff(output, target).item(), func.dice(output, target).item()
-        '''
-        with torch.no_grad():
-            print("training set: Loss {:.7f}, Dice coefficient: {:.4f}\n".format(train_loss / (IDX + 1), correct / (IDX + 1)))
-            valid(model, valid_loader)
-            return
-        '''
-    train_loss /= IDX + 1
-
-    print('Training  set: Loss: {:.7f}, Dice Coefficient: {:.4f}\n'.format(
-        train_loss , correct / (IDX + 1)))
-    
-    trainloss.append(train_loss)
-    trainaccu.append(correct / (IDX+1))
-
-valid_output = []
-def valid(model, valid_loader, valid_output= []):
-    model.eval()
-    valid_loss = 0
-    correct = 0
-    loss = []
-    valid_output = []
-
-    IDX = 0
-    it = 0
-    for data, target in tqdm(valid_loader):
-        '''
-        if it == 11:
-            break
-        '''    
-        it += 1
-
-        data, target = data.to(device), target.to(device)
-        output = model(data)
-        valid_output.append(output.detach().cpu().numpy())
-        # Sum up vatch loss
-        valid_loss += loss_f(output, target).data.item()
-        correct += func.dice_coeff(output, target).sum().item()
-    
-    valid_loss /= len(valid_loader.dataset)
-    print('Validation  set: Average Dice loss: {:.7f}, Average Dice Coefficient: {:.4f}\n'.format(
-        valid_loss, correct / it))
-
-    validloss.append(valid_loss)
-    validaccu.append(correct / it)
-    # valid_output = np.concatenate(valid_output)
 
 # print(len(train_loader), len(valid_loader))
 
 num_iter= 100
 
-## gmodel = unet.UNet(3, 1)
-## gmodel = ResUnet(3)
-gmodel = ResUnetPlusPlus(3)
+## model = unet.UNet(3, 1)
+## model = ResUnet(3)
+model = ResUnetPlusPlus(3)
 
-gmodel = gmodel.to(device)
-learning_rate = 0.0003
-## opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
-gopt = optim.Adam(gmodel.parameters(), lr= learning_rate, weight_decay = 1e-5)
+model = model.to(device)
+learning_rate = 1
+## opt = optim.AdamW(model.parameters(), lr= learning_rate)
+opt = optim.Adam(model.parameters(), lr= learning_rate, weight_decay = 1e-5)
 
 for epoch in range(0, num_iter):
     print("Epoch", epoch)
-    train(epoch, gmodel, gopt, train_loader)
-    i = len(validloss)
+    model.train()
+
+    train_loss = []
+    train_accs = []
+    for batch in tqdm(train_loader):
+        imgs, labels = batch
+
+        output = model(imgs.to(device))
+        a = list(model.parameters())[0][0]
+        loss = criterion(output, labels.to(device))
+
+        opt.zero_grad()
+        loss.backward()
+        grad_norm = nn.utils.clip_grad_norm_(model.parameters(), max_norm = 10)
+        opt.step()
+        ## print("Gradient= ", list(model.parameters())[0].grad[0][0][0]) 
+        b = list(model.parameters())[0][0]
+        ## print(a.data[0], "\n", b.data[0])
+        ## print(torch.equal(a.data, b.data))
+        acc = func.dice_coeff(output, labels.to(device)).item()
+
+        train_loss.append(loss.item())
+        train_accs.append(acc)
+
+    train_loss = sum(train_loss)/len(train_loss)
+    train_accs = sum(train_accs)/ len(train_accs)
+
+    trainloss.append(train_loss)
+    trainaccu.append(train_accs)
+    print(f"[ Train | {epoch + 1:03d}/{n_epochs:03d} ] loss = {train_loss:.5f}, acc = {train_acc:.5f}")
     
-    if epoch > 25 and validloss[i - 1] > validloss[i - 2] - 0.01:
-        print("Validation Loss increased")
-        break
+    model.eval()
+
+    valid_loss = []
+    valid_accs = []
+
+    for batch in tqdm(valid_loader):
+
+        imgs, labels = batch
+
+        with torch.no_grad():
+            output = model(imgs.to(device))
+
+        loss = criterion(output, labels.to(device))
+
+        acc = func.dice_coeff(output, labels.to(device))
+
+        valid_loss.append(loss.item())
+        valid_accs.append(acc.item())
+
+    valid_loss = sum(valid_loss) / len(valid_loss)
+    valid_accs = sum(valid_accs) / len(valid_accs)
+
+    print(f"[ Valid | {epoch + 1:03d}/{n_epochs:03d} ] loss = {valid_loss:.5f}, acc = {valid_acc:.5f}")
+
+    validloss.append(valid_loss)
+    validaccu.append(valid_accs)
+
+    if valid_acc > best_acc:
+        print(f"Best model found at epoch {epoch}, saving model")
+        torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/mmio/Juniors/model/checkpoint.ckpt")
+        best_acc = valid_acc
+        stale = 0
+    else:
+        stale += 1
+        if stale > patience:
+            print(f"No improvment {patience} consecutive epochs, early stopping")
+            break
     
-torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/meng/model/checkpoint.ckpt")
+## torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/mmio/Juniors/model/checkpoint.ckpt")
 
 import csv
-with open("/home/meng/model/output.csv", 'w', newline='') as f:
+with open("/home/mmio/Juniors/model/output.csv", 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(trainloss)
     w.writerow(validloss)
