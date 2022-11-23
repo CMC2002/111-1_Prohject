@@ -50,9 +50,12 @@ class brainDataset(Dataset):
            
         image_ = Image.fromarray(image)
         label_ = Image.fromarray(label)
-    
+        
+        mask = noise.perlin()
+        transf = trans.Lambda(lambda img: Image.fromarray(np.array(img) + mask)) 
         if self.transform is not None:
             images = self.transform(image_)
+            imgaes = transf(image_)
             labels = self.transform(label_)
             images = torch.concat((images, images, images), dim= 0)
         else:
@@ -63,21 +66,6 @@ class brainDataset(Dataset):
         transf = trans.Normalize(mean= 1, std= 1)
         images = transf(images)
 
-        '''
-        labe_ = np.zeros(labels.shape, dtype= int)
-        labels_ = torch.from_numpy(labe_)
-
-        for i in range(labels.size(dim= 0)):
-            for j in range(labels.size(dim= 1)):
-                if labels[0][i][j] == 0:
-                    labels_[0][i][j] = 1
-                else:
-                    labels_[0][i][j] = 0 
-   
-        labels = torch.concat((labels, labels_), dim= 0)    
-        
-        labels = labels.int()
-        '''        
         return images, labels
 
     def __len__(self):
@@ -85,19 +73,18 @@ class brainDataset(Dataset):
 
 def dataset(batch_size= 16):
 
-    mask = noise.perlin()
     train_transform = trans.Compose([
-        trans.Grayscale(num_output_channels= 1),
-        trans.Lambda(lambda img: Image.fromarray(np.array(img) + mask)),
         trans.Resize([192, 192]),
         trans.ToTensor()])
 
+    ## trans.Lambda(lambda img: Image.fromarray(np.array(img) + mask)
+    
     valid_transform = trans.Compose([
         trans.Resize([192, 192]),
         trans.ToTensor()])
 
-    train_set = brainDataset(root= "/home/meng/train", transform= train_transform)
-    valid_set = brainDataset(root= "/home/meng/valid", transform= valid_transform)
+    train_set = brainDataset(root= "/home/b09508011/train", transform= train_transform)
+    valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform)
 
     ## print(len(train_set), len(valid_set))
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)
@@ -110,19 +97,20 @@ def plot(data, label):
     print(data.size(), label.size())
     plt.subplot(1, 2, 1)
     plt.gray()
-    plt.plot(data)
+    plt.imshow(data)
     plt.title("data")
     plt.subplot(1, 2, 2)
     plt.gray()
-    plt.plot(label)
+    plt.imshow(label)
     plt.title("label")
     print(data)
     print(label)
     print("before show")
     plt.show()
     print("after show")
+
 '''
-train, valid = dataset(batch_size= 32)
+train, valid = dataset(batch_size= 1)
 
 print("dataloader", len(train), len(valid))
 

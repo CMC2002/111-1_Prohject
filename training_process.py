@@ -59,8 +59,8 @@ validloss = []
 trainaccu = []
 validaccu = []
 
-# model, opt = loadmodel("/home/mmio/Juniors/model/checkpoint.ckpt", device= device)
-# trainloss, validloss, trainaccu, validaccu = load_("/home/mmio/Juniors/model/output.csv")
+# model, opt = loadmodel("/home/b09508011/model/checkpoint.ckpt", device= device)
+# trainloss, validloss, trainaccu, validaccu = load_("/home/b09508011/model/output.csv")
 
 from tqdm import tqdm
 
@@ -139,7 +139,7 @@ for epoch in range(0, num_iter):
 
     if valid_acc > best_acc:
         print(f"Best model found at epoch {epoch}, saving model")
-        torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/mmio/Juniors/model/checkpoint.ckpt")
+        torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
         best_acc = valid_acc
         stale = 0
     else:
@@ -148,10 +148,10 @@ for epoch in range(0, num_iter):
             print(f"No improvment {patience} consecutive epochs, early stopping")
             break
     
-## torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/mmio/Juniors/model/checkpoint.ckpt")
+## torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
 
 import csv
-with open("/home/mmio/Juniors/model/output.csv", 'w', newline='') as f:
+with open("/home/b09508011/model/output.csv", 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(trainloss)
     w.writerow(validloss)
