@@ -62,6 +62,7 @@ class DiceLoss(nn.Module):
             y_pred.sum() + y_true.sum() + self.smooth
         )
         return 1. - dsc
+
 '''
 def dice_(pred, target):
 
@@ -74,6 +75,7 @@ def F1(pred, target):
 
     return f1(pred, target)
 '''
+
 # Focal loss
 ALPHA = 0.8
 GAMMA = 2
@@ -85,7 +87,7 @@ class FocalLoss(nn.Module):
     def forward(self, inputs, targets, alpha=ALPHA, gamma=GAMMA, smooth=1):
         
         #comment out if your model contains a sigmoid or equivalent activation layer
-        inputs = F.sigmoid(inputs)       
+        inputs = torch.sigmoid(inputs)       
         
         #flatten label and prediction tensors
         inputs = inputs.view(-1)

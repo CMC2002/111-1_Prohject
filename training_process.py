@@ -8,8 +8,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, models, transforms
 import torchvision
-from torchvision.models.segmentation import fcn_resnet50, FCN_ResNet50_Weights
-from torchvision.models import ResNet50_Weights
 import Unet_ as unet
 import torchmetrics as tm
 from ResUnet import ResUnet
@@ -40,30 +38,24 @@ def loadmodel(root, device):
     optimizer.load_state_dict(optimizer_state)
     return model, optimizer
 
-device = 'cuda'
-learning_rate = 0.00001
-batch_size = 64
-
+device = "cuda"
+batch_size = 32
 train_loader, valid_loader = dataset(batch_size= batch_size)
 
-## gmodel = unet.UNet(3, 1)
-## gmodel = ResUnet(3)
-gmodel = ResUnetPlusPlus(3)
-gmodel = gmodel.to(device= device)
-loss_f = func.DiceBCELoss()
-opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
+## loss_f = func.DiceLoss()
+loss_f = func.FocalLoss()
 
 trainloss = []
 validloss = []
 trainaccu = []
 validaccu = []
 
-# gmodel, opt = loadmodel("/home/b09508011/model/checkpoint.ckpt", device= device)
-# trainloss, validloss, trainaccu, validaccu = load_("/home/b09508011/model/output.csv")
+# gmodel, opt = loadmodel("/home/meng/model/checkpoint.ckpt", device= device)
+# trainloss, validloss, trainaccu, validaccu = load_("/home/meng/model/output.csv")
 
 from tqdm import tqdm
 
-def train(epoch, model, train_loader):
+def train(epoch, model, opt, train_loader):
     '''
     if epoch == 0:
       checkpoint=torch.load("./model/checkpoint.ckpt",map_location=device)
@@ -82,27 +74,33 @@ def train(epoch, model, train_loader):
         if batch_idx == 31:
             break
         '''
+        
         IDX = batch_idx
 
         data, target = data.to(device), target.to(device)
-        opt.zero_grad()
-        output = model(data.float())
-        
-        # print(output.size(), data.size(), target.size())
+        output = model(data)
+        ## print(list(model.parameters())[-1][0].data)
+        ## print(list(model.parameters())[0][0].grad)
         loss = loss_f(output, target)
-        a = list(model.parameters())[0]
+        ## a = list(model.parameters())[5]
+        opt.zero_grad()
         loss.backward()
+        grad_norm = nn.utils.clip_grad_norm_(model.parameters(), max_norm = 10)
         opt.step()
-        with torch.no_grad():
-            output = model(data)
-    
-        b = list(model.parameters())[0]
-        print(torch.equal(a.data, b.data))
-
+        ## print(list(model.parameters())[-1][0].data)
+        ## print("Gradient", list(model.parameters())[5].grad)
+        ## b = list(model.parameters())[5]
+        ## print("is equal", torch.equal(a.data, b.data))
+        ## print(a, "\n",b)
         train_loss += loss.item()
         correct += func.dice_coeff(output, target).item()
         # print(func.dice_coeff(output, target).item(), func.dice(output, target).item()
-
+        '''
+        with torch.no_grad():
+            print("training set: Loss {:.7f}, Dice coefficient: {:.4f}\n".format(train_loss / (IDX + 1), correct / (IDX + 1)))
+            valid(model, valid_loader)
+            return
+        '''
     train_loss /= IDX + 1
 
     print('Training  set: Loss: {:.7f}, Dice Coefficient: {:.4f}\n'.format(
@@ -145,25 +143,34 @@ def valid(model, valid_loader, valid_output= []):
 
 # print(len(train_loader), len(valid_loader))
 
-num_iter= 15
-for epoch in range(0, num_iter):
-    train(epoch, gmodel, train_loader)
-    i = len(validloss)
-    valid(gmodel, valid_loader)
+num_iter= 100
 
-    '''
-    if validloss[i] > validloss[i-1] - 0.01:
+## gmodel = unet.UNet(3, 1)
+## gmodel = ResUnet(3)
+gmodel = ResUnetPlusPlus(3)
+
+gmodel = gmodel.to(device)
+learning_rate = 0.0003
+## opt = optim.AdamW(gmodel.parameters(), lr= learning_rate)
+gopt = optim.Adam(gmodel.parameters(), lr= learning_rate, weight_decay = 1e-5)
+
+for epoch in range(0, num_iter):
+    print("Epoch", epoch)
+    train(epoch, gmodel, gopt, train_loader)
+    i = len(validloss)
+    
+    if epoch > 25 and validloss[i - 1] > validloss[i - 2] - 0.01:
         print("Validation Loss increased")
         break
-    '''
-torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
+    
+torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/meng/model/checkpoint.ckpt")
 
 import csv
-with open("/home/b09508011/model/output.csv", 'w', newline='') as f:
+with open("/home/meng/model/output.csv", 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(trainloss)
     w.writerow(validloss)
     w.writerow(trainaccu)
     w.writerow(validaccu)
 
-##torch.save({"model": gmodel.state_dict(), "optimizer": opt.state_dict()}, "./model/checkpoint.ckpt")
+

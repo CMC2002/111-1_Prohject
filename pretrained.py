@@ -10,9 +10,7 @@ from torchvision import datasets, models, transforms
 import torchvision
 from torchvision.models.segmentation import fcn_resnet50, FCN_ResNet50_Weights
 from torchvision.models import ResNet50_Weights
-from ResUNet import ResUnet
 import torchmetrics as tm
-from ResNet import resnet50
 import csv
 import pandas as pd
 
@@ -93,10 +91,12 @@ def train(epoch, model, train_loader):
         output = model(data.float())
         # print(output.size(), data.size(), target.size())
         a = list(model.parameters())[0]
-        loss = loss_f(output, target)
+        ## loss = loss_f(output, target)
+        loss = output.sum()
+        print(loss.retain_grad())
         loss.backward()
         opt.step()
-        
+        print(loss.retain_grad())
         b = list(model.parameters())[0]
         print(torch.equal(a.data, b.data))
 

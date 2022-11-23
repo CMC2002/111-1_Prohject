@@ -9,7 +9,6 @@ import torch
 import torch.utils.data as data
 from numpy import load
 import random
-import cv2
 import preprocessing_tool.noise as noise
 
 class brainDataset(Dataset):
@@ -48,10 +47,10 @@ class brainDataset(Dataset):
 
         imgpath = self.lab[index]
         label  = load(os.path.join(imgpath[0], imgpath[1]))
-       
+           
         image_ = Image.fromarray(image)
         label_ = Image.fromarray(label)
-
+    
         if self.transform is not None:
             images = self.transform(image_)
             labels = self.transform(label_)
@@ -97,22 +96,42 @@ def dataset(batch_size= 16):
         trans.Resize([192, 192]),
         trans.ToTensor()])
 
-    train_set = brainDataset(root= "/home/b09508011/train", transform= train_transform)
-    valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform)
-
+    train_set = brainDataset(root= "/home/meng/train", transform= train_transform)
+    valid_set = brainDataset(root= "/home/meng/valid", transform= valid_transform)
 
     ## print(len(train_set), len(valid_set))
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)
     valid_loader = DataLoader(dataset= valid_set, batch_size= batch_size, shuffle= False)
     
     return train_loader, valid_loader
+
+import matplotlib.pyplot as plt
+def plot(data, label):
+    print(data.size(), label.size())
+    plt.subplot(1, 2, 1)
+    plt.gray()
+    plt.plot(data)
+    plt.title("data")
+    plt.subplot(1, 2, 2)
+    plt.gray()
+    plt.plot(label)
+    plt.title("label")
+    print(data)
+    print(label)
+    print("before show")
+    plt.show()
+    print("after show")
 '''
 train, valid = dataset(batch_size= 32)
 
 print("dataloader", len(train), len(valid))
 
 for idx, (data, target) in enumerate(train):
-    data = data.to('cuda:1')
-    target = target.to('cuda:1')
+
+    plot(data[0][0], target[0][0])
+    print("is available", torch.cuda.is_available())
+    data = data.to('cuda')
+    target = target.to('cuda')
+    print(data)
     print(data.size(), target.size()) 
 '''
