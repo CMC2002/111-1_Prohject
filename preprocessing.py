@@ -25,10 +25,11 @@ for index in range(0, 1000):
 
 print(i)
 
-
+'''
+i = 812
 label = load(f"/home/b09508011/train/labels/label-{i}.npy")
 img = load(f"/home/b09508011/train/images/image-{i}.npy")
-'''
+
 def plot(data):
     plt.imshow(data)
     plt.gray()
@@ -51,11 +52,10 @@ def augmentation(img):
 
     ## img = ed.Roberts(img)
 
-    img_ = his.his_equal(img_)
+    ## img_ = his.his_mat(img, img_)
 
-    img_ += noise.perlin(img_)
     return img_
-'''
+
 img_ = augmentation(img)
 #plot(img)
 #plot(img_)
@@ -75,4 +75,4 @@ plot(img + label)
 plt.subplot(2, 2, 4)
 plot(img_)
 plt.show()
-'''
+

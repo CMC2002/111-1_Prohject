@@ -6,14 +6,14 @@ import random
 
 file_ = []
 dir_ = []
-for dirname, _, filenames in os.walk("/home/meng/train-2207/train/brain"):
+for dirname, _, filenames in os.walk("/home/b09508011/train-2207/train/brain"):
     for filename in filenames:
-        dir_.append(dirname[:27])
+        dir_.append(dirname[:32])
         file_.append(filename[:8])
 
-for dirname, _, filenames in os.walk("/home/meng/train-2209/train/brain"):
+for dirname, _, filenames in os.walk("/home/b09508011/train-2209/train/brain"):
     for filename in filenames:
-        dir_.append(dirname[:27])
+        dir_.append(dirname[:32])
         file_.append(filename[:8])
 
 ## print(file_)
@@ -35,7 +35,7 @@ for i in range(len(tdir)):
     print(tdir[i], tfile[i])
 
 '''
-
+'''
 sum = 0
 for index in range(len(tdir)):
     nifti = nib.load(os.path.join(tdir[index], "brain", (tfile[index] + "_brain.nii.gz")))
@@ -67,4 +67,4 @@ for index in range(len(vdir)):
     for i in range(img.shape[2]):
         save(f"/home/meng/valid/labels/label-{sum}.npy", img[:,:,i])
         sum += 1       
-
+'''

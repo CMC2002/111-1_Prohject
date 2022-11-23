@@ -9,10 +9,10 @@ import torch
 import torch.utils.data as data
 from numpy import load
 import random
-import preprocessing_tool.noise as noise
+from perlin_noise import PerlinNoise
 
 class brainDataset(Dataset):
-    def __init__(self, root, transform):
+    def __init__(self, root, transform, file_number):
 
         self.transform = transform
         self.root = root
@@ -20,43 +20,33 @@ class brainDataset(Dataset):
         file_list = []
         file_n = "images"
         path = os.path.join(root, file_n)
-    
-        for dirname, _, filenames in os.walk(path):
-             for filename in filenames:
-                 file_list.append((dirname, filename))
         
+        for i in range(file_number):
+            file_list.append((path, f"image-{i}.npy"))
+
         self.img = file_list
 
         label = []
         file_n = "labels"
         path = os.path.join(root, file_n)
-        
-        for dirname, _, filenames in os.walk(path):
-            for filename in filenames:
-                label.append((dirname, filename))
-
+        for i in range(file_number):
+            label.append((path, f"label-{i}.npy"))
         self.lab = label
-
         assert len(self.img) == len(self.lab), 'mismatched length!'
-        
         self.default_transformer = trans.ToTensor()
 
     def __getitem__(self, index):
         imgpath = self.img[index]
         image = load(os.path.join(imgpath[0], imgpath[1]))
 
-        imgpath = self.lab[index]
-        label  = load(os.path.join(imgpath[0], imgpath[1]))
-           
+        labpath = self.lab[index]
+        label  = load(os.path.join(labpath[0], labpath[1]))
         image_ = Image.fromarray(image)
         label_ = Image.fromarray(label)
         
-        mask = noise.perlin()
-        transf = trans.Lambda(lambda img: Image.fromarray(np.array(img) + mask)) 
         if self.transform is not None:
             images = self.transform(image_)
-            imgaes = transf(image_)
-            labels = self.transform(label_)
+            labels = self.default_transformer(label_)
             images = torch.concat((images, images, images), dim= 0)
         else:
             images = self.default_transformer(image_)
@@ -71,10 +61,16 @@ class brainDataset(Dataset):
     def __len__(self):
         return len(self.img)
 
+noise = PerlinNoise(octaves= 2)
+mask = [[noise([i*0.01, j*0.01]) for j in range(192)] for i in range(192)]
+mask = np.array(mask)
+
+
 def dataset(batch_size= 16):
 
     train_transform = trans.Compose([
         trans.Resize([192, 192]),
+        trans.Lambda(lambda img: Image.fromarray(np.array(img) + mask / 10)),
         trans.ToTensor()])
 
     ## trans.Lambda(lambda img: Image.fromarray(np.array(img) + mask)
@@ -83,8 +79,8 @@ def dataset(batch_size= 16):
         trans.Resize([192, 192]),
         trans.ToTensor()])
 
-    train_set = brainDataset(root= "/home/b09508011/train", transform= train_transform)
-    valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform)
+    train_set = brainDataset(root= "/home/b09508011/train", transform= train_transform, file_number= 71233)
+    valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform, file_number= 17281)
 
     ## print(len(train_set), len(valid_set))
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)
@@ -94,20 +90,18 @@ def dataset(batch_size= 16):
 
 import matplotlib.pyplot as plt
 def plot(data, label):
-    print(data.size(), label.size())
-    plt.subplot(1, 2, 1)
+    plt.subplot(2, 2, 1)
     plt.gray()
     plt.imshow(data)
     plt.title("data")
-    plt.subplot(1, 2, 2)
+    plt.subplot(2, 2, 2)
     plt.gray()
     plt.imshow(label)
     plt.title("label")
-    print(data)
-    print(label)
-    print("before show")
+    plt.subplot(2, 2, 3)
+    plt.imshow(data + label)
+    plt.gray()
     plt.show()
-    print("after show")
 
 '''
 train, valid = dataset(batch_size= 1)
@@ -117,9 +111,6 @@ print("dataloader", len(train), len(valid))
 for idx, (data, target) in enumerate(train):
 
     plot(data[0][0], target[0][0])
-    print("is available", torch.cuda.is_available())
     data = data.to('cuda')
     target = target.to('cuda')
-    print(data)
-    print(data.size(), target.size()) 
 '''

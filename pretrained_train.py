@@ -70,7 +70,10 @@ num_iter= 100
 
 ## model = unet.UNet(3, 1)
 ## model = ResUnet(3)
-model = ResUnetPlusPlus(3)
+## model = ResUnetPlusPlus(3)
+model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
+        in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
+
 
 model = model.to(device)
 learning_rate = 0.01
