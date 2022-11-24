@@ -7,6 +7,22 @@ import sklearn
 from torchmetrics.functional import dice
 from sklearn.metrics import confusion_matrix
 
+import matplotlib.pyplot as plt
+def plot(data, label):
+    ## print(label)
+    ## print(label.min(), label.max())
+    plt.subplot(2, 2, 1)
+    plt.gray()
+    plt.imshow(data)
+    plt.title("data")
+    plt.subplot(2, 2, 2)
+    plt.gray()
+    plt.imshow(label)
+    plt.title("label")
+    plt.subplot(2, 2, 3)
+    plt.imshow(data + label)
+    plt.gray()
+    plt.show()
 
 # Dice Loss
 class DiceBCELoss(nn.Module):
@@ -32,18 +48,27 @@ class DiceBCELoss(nn.Module):
     
 # Dice coefficient
 def dice_coeff(preds, targets):
-
+    threshold = 0.8
     smooth = 1
     #comment out if your model contains a sigmoid or equivalent activation layer
-    preds = torch.sigmoid(preds)
-    
+ 
+    '''
+    with torch.no_grad():
+        print(preds.cpu().numpy().max())
+        print(targets.cpu().numpy().min(), targets.cpu().numpy().max())
+        plot(preds.cpu()[0, 0, :, :], targets.cpu()[0, 0, :, :])
+    '''
+
     #flatten label and prediction tensors
     preds = abs(preds.view(-1))
     targets = abs(targets.view(-1))
 
+    preds = (preds > threshold).float()
+
+    ## print((preds * targets).sum())
     intersection = (preds * targets).sum()
     dice = (2.*intersection + smooth)/(preds.sum() + targets.sum() + smooth)
-    # print(dice.item())
+    
     return dice
 
 # Dice
@@ -102,12 +127,12 @@ class FocalLoss(nn.Module):
 
 class FandD(nn.Module):
     def __init__(self):
-        super(FandD, slef).__init__()
-        self.f = FocalLoss(self)
-        self.d = DiceLoss(self)
+        super(FandD, self).__init__()
+        self.f = FocalLoss()
+        self.d = DiceLoss()
 
-    def forward():
-        loss = self.f + self.d
+    def forward(self, preds, targets):
+        loss = self.f(preds, targets) + self.d(preds, targets)
         
         return loss
 

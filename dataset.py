@@ -78,9 +78,9 @@ def dataset(batch_size= 16):
     valid_transform = trans.Compose([
         trans.Resize([192, 192]),
         trans.ToTensor()])
-
-    train_set = brainDataset(root= "/home/b09508011/train", transform= train_transform, file_number= 71233)
-    valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform, file_number= 17281)
+    ## 71424/17099
+    train_set = brainDataset(root= "/home/meng/train_", transform= train_transform, file_number= 10000)
+    valid_set = brainDataset(root= "/home/meng/valid_", transform= valid_transform, file_number= 1000)
 
     ## print(len(train_set), len(valid_set))
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)

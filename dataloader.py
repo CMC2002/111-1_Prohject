@@ -6,14 +6,14 @@ import random
 
 file_ = []
 dir_ = []
-for dirname, _, filenames in os.walk("/home/b09508011/train-2207/train/brain"):
+for dirname, _, filenames in os.walk("/home/meng/train-2207/train/images"):
     for filename in filenames:
-        dir_.append(dirname[:32])
+        dir_.append(dirname[:27])
         file_.append(filename[:8])
 
-for dirname, _, filenames in os.walk("/home/b09508011/train-2209/train/brain"):
+for dirname, _, filenames in os.walk("/home/meng/train-2209/train/labels"):
     for filename in filenames:
-        dir_.append(dirname[:32])
+        dir_.append(dirname[:27])
         file_.append(filename[:8])
 
 ## print(file_)
@@ -35,21 +35,21 @@ for i in range(len(tdir)):
     print(tdir[i], tfile[i])
 
 '''
-'''
+
 sum = 0
 for index in range(len(tdir)):
-    nifti = nib.load(os.path.join(tdir[index], "brain", (tfile[index] + "_brain.nii.gz")))
+    nifti = nib.load(os.path.join(tdir[index], "images", (tfile[index] + ".nii.gz")))
     img = nifti.get_fdata()
     for i in range(img.shape[2]):
-        save(f"/home/meng/train/images/image-{sum}.npy", img[:,:,i])
+        save(f"/home/meng/train_/images/image-{sum}.npy", img[:,:,i])
         sum += 1
 
 sum = 0
 for index in range(len(vdir)):
-    nifti = nib.load(os.path.join(vdir[index], "brain",  (vfile[index] + "_brain.nii.gz")))
+    nifti = nib.load(os.path.join(vdir[index], "images",  (vfile[index] + ".nii.gz")))
     img = nifti.get_fdata()
     for i in range(img.shape[2]):
-        save(f"/home/meng/valid/images/image-{sum}.npy", img[:,:,i])
+        save(f"/home/meng/valid_/images/image-{sum}.npy", img[:,:,i])
         sum += 1
 
 sum = 0
@@ -57,7 +57,7 @@ for index in range(len(tdir)):
     nifti = nib.load(os.path.join(tdir[index], "labels", (tfile[index] + ".nii.gz")))
     img = nifti.get_fdata()
     for i in range(img.shape[2]):
-        save(f"/home/meng/train/labels/label-{sum}.npy", img[:,:,i])
+        save(f"/home/meng/train_/labels/label-{sum}.npy", img[:,:,i])
         sum += 1
 
 sum = 0
@@ -65,6 +65,5 @@ for index in range(len(vdir)):
     nifti = nib.load(os.path.join(vdir[index], "labels", (vfile[index] + ".nii.gz")))
     img = nifti.get_fdata()
     for i in range(img.shape[2]):
-        save(f"/home/meng/valid/labels/label-{sum}.npy", img[:,:,i])
-        sum += 1       
-'''
+        save(f"/home/meng/valid_/labels/label-{sum}.npy", img[:,:,i])
+        sum += 1      

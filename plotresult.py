@@ -22,6 +22,7 @@ def load_(root):
 
 # Plot loss
 def plotloss(train, valid):
+    print(len(train), len(valid))
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.plot(range(0, len(train)), train, color = 'blue', label = 'training loss')
@@ -39,7 +40,7 @@ def plotaccu(train, valid):
     plt.show()
 
 def main():
-    trainloss, validloss, trainaccu, validaccu = load_(root= "/home/b09508011/model/output.csv")
+    trainloss, validloss, trainaccu, validaccu = load_(root= "/home/meng/model/output.csv")
     plotloss(trainloss, validloss)
     plotaccu(trainaccu, validaccu)
     

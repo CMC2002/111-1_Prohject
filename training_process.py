@@ -71,11 +71,13 @@ num_iter= 100
 ## model = unet.UNet(3, 1)
 ## model = ResUnet(3)
 model = ResUnetPlusPlus(3)
-
+best_loss = 100
+patience = 50
+stale = 0
 model = model.to(device)
 learning_rate = 0.01
 ## opt = optim.AdamW(model.parameters(), lr= learning_rate)
-opt = optim.Adam(model.parameters(), lr= learning_rate, weight_decay = 1e-5)
+opt = optim.AdamW(model.parameters(), lr= learning_rate)
 
 for epoch in range(0, num_iter):
     print("Epoch", epoch)
@@ -103,7 +105,7 @@ for epoch in range(0, num_iter):
 
     trainloss.append(train_loss)
     trainaccu.append(train_accs)
-    print(f"[ Train | {epoch + 1:03d}/{n_epochs:03d} ] loss = {train_loss:.5f}, acc = {train_acc:.5f}")
+    print(f"[ Train | {epoch + 1:03d}/{num_iter:03d} ] loss = {train_loss:.5f}, acc = {train_acc:.5f}")
     
     model.eval()
 
@@ -120,15 +122,15 @@ for epoch in range(0, num_iter):
         loss = criterion(output, labels.to(device))
 
 
-    print(f"[ Valid | {epoch + 1:03d}/{n_epochs:03d} ] loss = {valid_loss:.5f}, acc = {valid_acc:.5f}")
+    print(f"[ Valid | {epoch + 1:03d}/{num_iter:03d} ] loss = {valid_loss:.5f}, acc = {valid_accs:.5f}")
 
     validloss.append(valid_loss)
     validaccu.append(valid_accs)
 
-    if valid_acc > best_acc:
+    if valid_loss < best_loss:
         print(f"Best model found at epoch {epoch}, saving model")
-        torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
-        best_acc = valid_acc
+        torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/meng/model/checkpoint.ckpt")
+        best_loss = valid_loss
         stale = 0
     else:
         stale += 1
@@ -139,7 +141,7 @@ for epoch in range(0, num_iter):
 ## torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
 
 import csv
-with open("/home/b09508011/model/output.csv", 'w', newline='') as f:
+with open("/home/meng/model/output.csv", 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(trainloss)
     w.writerow(validloss)
