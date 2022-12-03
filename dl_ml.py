@@ -2,7 +2,7 @@ import Functions as func
 import numpy as np
 import torch.optim as optim
 import torch
-from dataset import dataset
+from dataset_class import dataset
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -11,6 +11,7 @@ import torchvision
 import torchmetrics as tm
 import csv
 import pandas as pd
+from ResNet import resNet
 
 def load_(root):
     Data = pd.read_csv(root, delimiter= ',', encoding= 'utf-8', header= None)
@@ -28,12 +29,11 @@ def load_(root):
     
     return trainloss, validloss, trainaccu, validaccu
 
-def loadmodel(root, model, optimizer, device):
+def loadmodel(root, model, device):
     checkpoint = torch.load(root, map_location= device)
     model_state, optimizer_state = checkpoint["model"], checkpoint["optimizer"]
     model.load_state_dict(model_state)
-    optimizer.load_state_dict(optimizer_state)
-    return model, optimizer
+    return model
 
 myseed = 998244353  # set a random seed for reproducibility
 torch.backends.cudnn.deterministic = True
@@ -43,39 +43,37 @@ torch.manual_seed(myseed)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(myseed)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(device)
-batch_size = 128
+batch_size = 64
 train_loader, valid_loader = dataset(batch_size= batch_size)
 
-criterion = func.FandD()
-## loss_f = func.FocalLoss()
+criterion = nn.CrossEntropyLoss()
 
 trainloss = []
 validloss = []
 trainaccu = []
 validaccu = []
-
-# model, opt = loadmodel("/home/b09508011/model/checkpoint.ckpt", device= device)
-trainloss, validloss, trainaccu, validaccu = load_("/home/meng/model/output.csv")
+# trainloss, validloss, trainaccu, validaccu = load_("/home/b09508011/model/output.csv")
 
 from tqdm import tqdm
 
 # print(len(train_loader), len(valid_loader))
 
-num_iter= 100
+num_iter= 1000
+
 patience = 15
 stale = 0
 best_acc = 0
 lowest_loss = 100
-model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
-        in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
 
+model = resNet()
 model = model.to(device)
-learning_rate = 0.0001
+model = loadmodel("/home/meng/model/checkpoint_d.ckpt", model, device)
+
+learning_rate = 0.00001
 ## opt = optim.AdamW(model.parameters(), lr= learning_rate)
 opt = optim.AdamW(model.parameters(), lr= learning_rate)
-model, opt = loadmodel("/home/meng/model/checkpoint.ckpt", model, opt, device= device)
 
 for epoch in range(0, num_iter):
     print("Epoch", epoch)
@@ -93,7 +91,8 @@ for epoch in range(0, num_iter):
         loss.backward()
         grad_norm = nn.utils.clip_grad_norm_(model.parameters(), max_norm = 10)
         opt.step()
-        acc = func.dice_coeff(output, labels.to(device)).item()
+
+        acc = func.Accuracy(output, labels)
 
         train_loss.append(loss.item())
         train_accs.append(acc)
@@ -118,8 +117,8 @@ for epoch in range(0, num_iter):
             output = model(imgs.to(device))
 
         loss = criterion(output, labels.to(device))
-        acc = func.dice_coeff(output, labels.to(device)).item()
-        
+        acc = func.Accuracy(output, labels)
+
         valid_loss.append(loss)
         valid_accs.append(acc)
 
@@ -130,9 +129,11 @@ for epoch in range(0, num_iter):
     validloss.append(valid_loss)
     validaccu.append(valid_accs)
 
-    if valid_accs > best_acc:
+    if best_acc < valid_accs:
+        with open(f"/home/meng/model/log_d.txt","a"):
+            print(f"[ Valid | {epoch + 1:03d}/{num_iter:03d} ] loss = {valid_loss:.5f}, acc = {valid_accs:.5f} -> best")
         print(f"Best model found at epoch {epoch}, saving model")
-        torch.save({"model": model.state_dict(), "optimizer": opt.state_dict()}, "/home/meng/model/checkpoint.ckpt")
+        torch.save({"model": model.state_dict(), "optimizer": opt.state_dict()}, "/home/meng/model/checkpoint_d.ckpt")
         best_acc = valid_accs
         stale = 0
     else:
@@ -140,11 +141,9 @@ for epoch in range(0, num_iter):
         if stale > patience:
             print(f"No improvment {patience} consecutive epochs, early stopping")
             break
-    
-## torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
 
 import csv
-with open("/home/meng/model/output.csv", 'w', newline='') as f:
+with open("/home/meng/model/output_d.csv", 'w', newline='') as f:
     w = csv.writer(f)
     w.writerow(trainloss)
     w.writerow(validloss)

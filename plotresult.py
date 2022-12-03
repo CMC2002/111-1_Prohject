@@ -40,15 +40,20 @@ def plotaccu(train, valid):
     plt.show()
 
 def main():
-    trainloss, validloss, trainaccu, validaccu = load_(root= "/home/meng/model/output.csv")
-    plotloss(trainloss, validloss)
-    plotaccu(trainaccu, validaccu)
-    
-    # print(trainloss)
-    # print(validloss)
-    # print(trainaccu)
-    # print(validaccu)
+    trainloss, validloss, trainaccu, validaccu = load_(root= "/home/meng/model/output_d.csv")
+    train_loss = []
+    valid_loss = []
+    train_accu = []
+    valid_accu = []
 
+    for i in range(len(trainloss)):
+        train_loss.append(float(trainloss[i][:5]))
+        valid_loss.append(float(validloss[i][7:13]))
+        train_accu.append(float(trainaccu[i][:5]))
+        valid_accu.append(float(validaccu[i][:5]))
+
+    plotloss(train_loss, valid_loss)
+    plotaccu(train_accu, valid_accu)
 
 main()
 

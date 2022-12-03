@@ -24,6 +24,44 @@ def plot(data, label):
     plt.gray()
     plt.show()
 
+def Accuracy(preds, targets):
+    batchsize = preds.shape[0]
+    acc = 0
+    for i in range(batchsize):
+        acc += accuracy(preds[i], targets[i])
+    return float(acc / batchsize)
+
+# Accuracy for classification
+def accuracy(preds, targets):
+
+    if preds[0] < preds[1]:
+        prediction = 1
+    else: prediction = 0
+    
+    if prediction == targets:
+        return 1
+    else: return 0
+
+def accuracyfor3(preds1, preds2, preds3, targets):
+    batchsize = preds1.shape[0]
+    acc = 0
+    vote = 0
+    for i in range(batchsize):
+        if preds1[i][0] < preds1[i][1]:
+            vote += 1
+        if preds2[i][0] < preds2[i][1]:
+            vote += 1
+        if preds3[i][0] < preds3[i][1]:
+            vote += 1
+        if vote >= 2:
+            vote = 1
+        else: vote = 0
+        
+        if vote == targets[i]:
+            acc += 1
+    
+    return acc / batchsize
+
 # Dice Loss
 class DiceBCELoss(nn.Module):
     def __init__(self, weight=None, size_average=True):

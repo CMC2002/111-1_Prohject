@@ -11,7 +11,12 @@ for dirname, _, filenames in os.walk("/home/meng/train-2207/train/images"):
         dir_.append(dirname[:27])
         file_.append(filename[:8])
 
-for dirname, _, filenames in os.walk("/home/meng/train-2209/train/labels"):
+for dirname, _, filenames in os.walk("/home/meng/train-2209/train/images"):
+    for filename in filenames:
+        dir_.append(dirname[:27])
+        file_.append(filename[:8])
+
+for dirname, _, filenames in os.walk("/home/meng/train-2211/train/images"):
     for filename in filenames:
         dir_.append(dirname[:27])
         file_.append(filename[:8])

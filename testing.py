@@ -1,12 +1,11 @@
-import dataset as ds
+import dataset_class as ds
 
 
-def loadmodel(root, model, optimizer, device):
+def loadmodel(root, model, device):
     checkpoint = torch.load(root, map_location= device)
     model_state, optimizer_state = checkpoint["model"], checkpoint["optimizer"]
     model.load_state_dict(model_state)
-    optimizer.load_state_dict(optimizer_state)
-    return model, optimizer
+    return model
 
 import matplotlib.pyplot as plt
 def plot(data, label, pred):
@@ -29,22 +28,53 @@ def plot(data, label, pred):
 
 import torch
 import torch.optim as optim
+import Functions as func
+from ResNet import resNet
+
 device = "cuda"
-model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
-        in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
-model = model.to(device)
+model1 = resNet()
+print("model 1")
+model2 = resNet()
+print("model 2")
+model3 = resNet()
+print("model 3")
 
-opt = optim.Adam(model.parameters(), lr= 1, weight_decay = 1e-5)
+model1 = model1.to(device)
+model2 = model2.to(device)
+model3 = model3.to(device)
 
-model, opt = loadmodel("/home/meng/model/checkpoint.ckpt", model, opt, device= "cuda")
+model1 = loadmodel("/home/meng/checkpoint_d1.ckpt", model1, device= "cuda")
+print("Load 1")
+model2 = loadmodel("/home/meng/checkpoint_d2.ckpt", model2, device= "cuda")
+print("load 2")
+model3 = loadmodel("/home/meng/checkpoint_d3.ckpt", model3, device= "cuda")
+print("load 3")
+
+from tqdm import tqdm
 
 train_loader, valid_loader = ds.dataset(batch_size= 1)
-
-for idx, (data, target) in enumerate(train_loader):
+accu = 0
+accu1 = 0
+accu2 = 0
+accu3 = 0
+output1 = []
+output2 = []
+output3 = []
+for idx, (data, target) in enumerate(tqdm(train_loader)):
+    output = 0
     with torch.no_grad():
-        output = model(data.to(device))
-    
-    plot(data.cpu()[0, 0, :, :], target[0, 0, :, :], output.cpu()[0, 0, :, :])
+        output1 = model1(data.to(device))
+        output2 = model2(data.to(device))
+        output3 = model3(data.to(device))
 
-    if idx == 20:
-        break
+    accu1 += func.Accuracy(output1, target)
+    accu2 += func.Accuracy(output2, target)
+    accu3 += func.Accuracy(output3, target)
+    accu += func.accuracyfor3(output1, output2, output3, target)
+
+
+
+print("Accuracy of model 1: ", accu1 / len(train_loader))
+print("Accuracy of model 2: ", accu2 / len(train_loader))
+print("Accuracy of model 3: ", accu3 / len(train_loader))
+print(accu / len(train_loader))
