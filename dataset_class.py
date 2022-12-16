@@ -98,8 +98,8 @@ def dataset(batch_size= 16):
         trans.ToTensor()])
     
     ## 84736/21440
-    train_set = brainDataset(root= "/home/meng/train_", split= "train", transform= train_transform, file_number= 85024)
-    valid_set = brainDataset(root= "/home/meng/valid_", split= "valid", transform= valid_transform, file_number= 21152)
+    train_set = brainDataset(root= "/home/meng/train_", split= "train", transform= train_transform, file_number= 84224)
+    valid_set = brainDataset(root= "/home/meng/valid_", split= "valid", transform= valid_transform, file_number= 21952)
 
     ## print(len(train_set), len(valid_set))
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)

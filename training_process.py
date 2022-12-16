@@ -8,12 +8,19 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, models, transforms
 import torchvision
-import Unet_ as unet
 import torchmetrics as tm
-from ResUnet import ResUnet
-from ResUnet_plus import ResUnetPlusPlus
+from models.ResUnet import ResUnet
+from models.ResUnet_plus import ResUnetPlusPlus
 import csv
 import pandas as pd
+
+def savestatis(trainloss, validloss, trainaccu, validaccu):
+    with open("/home/meng/model/output_pp.csv", 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(trainloss)
+        w.writerow(validloss)
+        w.writerow(trainaccu)
+        w.writerow(validaccu)
 
 def load_(root):
     Data = pd.read_csv(root, delimiter= ',', encoding= 'utf-8', header= None)
@@ -31,14 +38,14 @@ def load_(root):
     
     return trainloss, validloss, trainaccu, validaccu
 
-def loadmodel(root, model, optimizer, device):
+def loadmodel(root, model, opt, device):
     checkpoint = torch.load(root, map_location= device)
     model_state, optimizer_state = checkpoint["model"], checkpoint["optimizer"]
     model.load_state_dict(model_state)
-    optimizer.load_state_dict(optimizer_state)
-    return model, optimizer
+    opt.load_state_dict(optimizer_state)
+    return model, opt
 
-myseed = 2  # set a random seed for reproducibility
+myseed = 998244353  # set a random seed for reproducibility
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(myseed)
@@ -48,11 +55,11 @@ if torch.cuda.is_available():
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(device)
-batch_size = 50
+batch_size = 64
 train_loader, valid_loader = dataset(batch_size= batch_size)
 
-criterion = func.DiceLoss()
-## loss_f = func.FocalLoss()
+criterion = func.DiceBCELoss()
+## criterion = func.FocalLoss()
 
 trainloss = []
 validloss = []
@@ -60,7 +67,7 @@ trainaccu = []
 validaccu = []
 
 # model, opt = loadmodel("/home/b09508011/model/checkpoint.ckpt", device= device)
-# trainloss, validloss, trainaccu, validaccu = load_("/home/b09508011/model/output.csv")
+trainloss, validloss, trainaccu, validaccu = load_("/home/meng/model/output_pp.csv")
 
 from tqdm import tqdm
 
@@ -69,17 +76,16 @@ from tqdm import tqdm
 num_iter= 100
 
 ## model = unet.UNet(3, 1)
-## model = ResUnet(3)
-model = ResUnetPlusPlus(3)
-best_loss = 100
+model = ResUnet(3)
+## model = ResUnetPlusPlus(3)
+best_loss = 1000
 best_acc = 0
-patience = 15
+patience = 20
 stale = 0
 model = model.to(device)
 learning_rate = 0.00001
-## opt = optim.AdamW(model.parameters(), lr= learning_rate)
 opt = optim.AdamW(model.parameters(), lr= learning_rate)
-## model, opt = loadmodel("/home/meng/model/checkpoint.ckpt", model, opt, device= device)
+model, _ = loadmodel("/home/meng/model/checkpoint_pp.ckpt", model, opt, device= device)
 
 for epoch in range(0, num_iter):
     print("Epoch", epoch)
@@ -132,36 +138,20 @@ for epoch in range(0, num_iter):
 
     validloss.append(valid_loss)
     validaccu.append(valid_accs)
-
+    savestatis(trainloss, validloss, trainaccu, validaccu)
     if valid_accs > best_acc:
         with open(f"/home/meng/model/log.txt", "a"):
             print(f"[ Valid | {epoch + 1:03d}/{num_iter:03d} ] loss = {valid_loss:.5f}, acc = {valid_accs:.5f} -> best")
         
         print(f"Best model found at epoch {epoch}, saving model")
-        torch.save({"model": model.state_dict(), "optimizer": opt.state_dict()}, "/home/meng/model/checkpoint.ckpt")
+        torch.save({"model": model.state_dict(), "optimizer": opt.state_dict()}, "/home/meng/model/checkpoint_pp.ckpt")
         best_acc = valid_accs
         stale = 0
+    
     else:
         stale += 1
-        if stale > patience:
+        if stale >= patience:
             print(f"No improvment {patience} consecutive epochs, early stopping")
             break
 
 ## torch.save({"model": gmodel.state_dict(), "optimizer": gopt.state_dict()}, "/home/b09508011/model/checkpoint.ckpt")
-
-import csv
-with open("/home/meng/model/output.csv", 'w', newline='') as f:
-    w = csv.writer(f)
-    w.writerow(trainloss)
-    w.writerow(validloss)
-    w.writerow(trainaccu)
-    w.writerow(validaccu)
-
-
-import Functions as func
-import Functions as func
-import numpy as np
-import torch.optim as optim
-import torch
-from dataset import dataset
-import torch.nn as nn

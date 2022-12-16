@@ -11,7 +11,7 @@ import torchvision
 import torchmetrics as tm
 import csv
 import pandas as pd
-from ResNet import resNet
+from models.models import resNet, VGG, GoogleNet, InceptionV3
 
 def load_(root):
     Data = pd.read_csv(root, delimiter= ',', encoding= 'utf-8', header= None)
@@ -68,10 +68,14 @@ best_acc = 0
 lowest_loss = 100
 
 model = resNet()
-model = model.to(device)
-model = loadmodel("/home/meng/model/checkpoint_d.ckpt", model, device)
+## model = VGG()
+## model = GoogleNet()
+## model = InceptionV3()
 
-learning_rate = 0.00001
+model = model.to(device)
+## model = loadmodel("/home/meng/checkpoint_googlenet.ckpt", model, device)
+
+learning_rate = 0.000001
 ## opt = optim.AdamW(model.parameters(), lr= learning_rate)
 opt = optim.AdamW(model.parameters(), lr= learning_rate)
 
@@ -133,7 +137,7 @@ for epoch in range(0, num_iter):
         with open(f"/home/meng/model/log_d.txt","a"):
             print(f"[ Valid | {epoch + 1:03d}/{num_iter:03d} ] loss = {valid_loss:.5f}, acc = {valid_accs:.5f} -> best")
         print(f"Best model found at epoch {epoch}, saving model")
-        torch.save({"model": model.state_dict(), "optimizer": opt.state_dict()}, "/home/meng/model/checkpoint_d.ckpt")
+        torch.save({"model": model.state_dict(), "optimizer": opt.state_dict()}, "/home/meng/model/checkpoint_resnet50.ckpt")
         best_acc = valid_accs
         stale = 0
     else:

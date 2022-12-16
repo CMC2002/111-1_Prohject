@@ -1,5 +1,19 @@
-import dataset_class as ds
-
+import Functions as func
+import numpy as np
+import torch.optim as optim
+import torch
+from testdata import dataset as testdataset
+from testdata import dataset
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torchvision import datasets, models, transforms
+import torchvision
+import torchmetrics as tm
+import csv
+import pandas as pd
+from numpy import save
+from models.ResUnet import ResUnet
 
 def loadmodel(root, model, device):
     checkpoint = torch.load(root, map_location= device)
@@ -7,74 +21,43 @@ def loadmodel(root, model, device):
     model.load_state_dict(model_state)
     return model
 
-import matplotlib.pyplot as plt
-def plot(data, label, pred):
-    print(data.shape, label.shape, pred.shape)
-    plt.subplot(2, 2, 1)
-    plt.gray()
-    plt.imshow(data)
-    plt.title("data")
-    plt.subplot(2, 2, 2)
-    plt.gray()
-    plt.imshow(label)
-    plt.title("label")
-    plt.subplot(2, 2, 3)
-    plt.imshow(data + label)
-    plt.gray()
-    plt.subplot(2, 2, 4)
-    plt.imshow(pred)
-    plt.gray()
-    plt.show()
+myseed = 998244353  # set a random seed for reproducibility
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(myseed)
+torch.manual_seed(myseed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(myseed)
 
-import torch
-import torch.optim as optim
-import Functions as func
-from ResNet import resNet
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(device)
 
-device = "cuda"
-model1 = resNet()
-print("model 1")
-model2 = resNet()
-print("model 2")
-model3 = resNet()
-print("model 3")
-
-model1 = model1.to(device)
-model2 = model2.to(device)
-model3 = model3.to(device)
-
-model1 = loadmodel("/home/meng/checkpoint_d1.ckpt", model1, device= "cuda")
-print("Load 1")
-model2 = loadmodel("/home/meng/checkpoint_d2.ckpt", model2, device= "cuda")
-print("load 2")
-model3 = loadmodel("/home/meng/checkpoint_d3.ckpt", model3, device= "cuda")
-print("load 3")
+test_data = testdataset()
 
 from tqdm import tqdm
+from numpy import save
 
-train_loader, valid_loader = ds.dataset(batch_size= 1)
-accu = 0
-accu1 = 0
-accu2 = 0
-accu3 = 0
-output1 = []
-output2 = []
-output3 = []
-for idx, (data, target) in enumerate(tqdm(train_loader)):
-    output = 0
+## model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
+##        in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
+
+model = ResUnet(3)
+model = model.to(device)
+model = loadmodel("/home/meng/checkpoint_078.ckpt", model, device= device)
+    
+model.eval()
+
+for batch in tqdm(test_data):
+
+    imgs, labels = batch
+
     with torch.no_grad():
-        output1 = model1(data.to(device))
-        output2 = model2(data.to(device))
-        output3 = model3(data.to(device))
+        output = model(imgs.float().to(device))
+        predict = output.cpu().numpy()
+        predict = (predict > 0.9)
+        labels = (str(labels)).lstrip('(\')').rstrip(',\')')
 
-    accu1 += func.Accuracy(output1, target)
-    accu2 += func.Accuracy(output2, target)
-    accu3 += func.Accuracy(output3, target)
-    accu += func.accuracyfor3(output1, output2, output3, target)
+        save(f"/home/meng/predict/{labels}.npy", predict)
+        
+        
+    
 
-
-
-print("Accuracy of model 1: ", accu1 / len(train_loader))
-print("Accuracy of model 2: ", accu2 / len(train_loader))
-print("Accuracy of model 3: ", accu3 / len(train_loader))
-print(accu / len(train_loader))

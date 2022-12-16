@@ -39,21 +39,44 @@ def plotaccu(train, valid):
     plt.legend()
     plt.show()
 
+def plot(tl, vl, ta, va):
+
+    plt.subplot(1, 2, 1)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.plot(range(0, len(tl)), tl, color = 'blue', label = 'training loss')
+    plt.plot(range(0, len(vl)), vl, color = 'red', label = 'validation loss')
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.plot(range(0, len(ta)), ta, color = 'blue', label = 'training accuracy')
+    plt.plot(range(0, len(va)), va, color = 'red', label = 'validation accuracy')
+    plt.legend()
+
+    plt.show()
+
 def main():
-    trainloss, validloss, trainaccu, validaccu = load_(root= "/home/meng/model/output_d.csv")
+    trainloss, validloss, trainaccu, validaccu = load_(root= "/home/meng/model/output_pp.csv")
+    ## print(trainloss, validloss, trainaccu, validaccu)
     train_loss = []
     valid_loss = []
     train_accu = []
     valid_accu = []
-
+   
+    '''
     for i in range(len(trainloss)):
         train_loss.append(float(trainloss[i][:5]))
         valid_loss.append(float(validloss[i][7:13]))
         train_accu.append(float(trainaccu[i][:5]))
         valid_accu.append(float(validaccu[i][:5]))
-
-    plotloss(train_loss, valid_loss)
-    plotaccu(train_accu, valid_accu)
+    '''
+    plt.figure(figsize=(10, 8))
+    print(len(trainloss))
+    plot(trainloss, validloss, trainaccu, validaccu)
+    ## plotloss(train_loss, valid_loss)
+    ## plotaccu(train_accu, valid_accu)
 
 main()
 

@@ -35,6 +35,11 @@ for dirname, _, filenames in os.walk("/home/meng/train-2212/train/images"):
 ## print(file_)
 ## print(len(file_), len(dir_))
 
+tdir_ = []
+tfile_ = []
+vdir_ = []
+vfile_ = []
+
 def split(dir_, file_):
     dataset = list(zip(dir_, file_))
     random.shuffle(dataset)
@@ -44,20 +49,20 @@ def split(dir_, file_):
 
     tdir, tfile = zip(*trains)
     vdir, vfile = zip(*vals)
+        
+    tdir_ = np.append(tdir_, tdir, axis= 1)
+    tfile_= np.append(tdir_, tfile, axis= 1)
+    vdir_ = np.append(tdir_, vdir, axis= 1)
+    vfile_ = np.append(tdir_, vfile, axis= 1)
 
-    return tdir, tfile, vdir, vfile
-
-## tdir, tfile, vdir, vfile = split(dir_1, file_1)
-## print(len(tdir), len(vdir), len(tfile), len(vfile))
-
-## tdir, tfile, vdir, vfile = split(dir_2, file_2)
-## print(len(tdir), len(vdir), len(tfile), len(vfile))
-
-## tdir, tfile, vdir, vfile = split(dir_3, file_3)
-## print(len(tdir), len(vdir), len(tfile), len(vfile))
-
-tdir, tfile, vdir, vfile = split(dir_4, file_4)
-print(len(tdir), len(vdir), len(tfile), len(vfile))
+split(dir_1, file_1)
+print(len(tdir_), len(vdir_), len(tfile_), len(vfile_))
+split(dir_2, file_2)
+print(len(tdir_), len(vdir_), len(tfile_), len(vfile_))
+split(dir_3, file_3)
+print(len(tdir_), len(vdir_), len(tfile_), len(vfile_))
+split(dir_4, file_4)
+print(len(tdir_), len(vdir_), len(tfile_), len(vfile_))
 
 '''
 print(tdir, tfile)
@@ -66,43 +71,24 @@ for i in range(len(tdir)):
     print(tdir[i], tfile[i])
 
 '''
-
-train = 15096
-valid = 3711
-
-sum = train
+'''
+sum = 0
 for index in range(len(tdir)):
     nifti = nib.load(os.path.join(tdir[index], "images", (tfile[index] + ".nii.gz")))
     img = nifti.get_fdata()
-
-    nifti = nib.load(os.path.join(tdir[index], "labels", (tfile[index] + ".nii.gz")))
-    lab = nifti.get_fdata()
-    
     for i in range(img.shape[2]):
-        if lab[:,:,i].max() == 1:
-            save(f"/home/meng/train/images/image-{sum}.npy", img[:,:,i])
-            save(f"/home/meng/train/labels/label-{sum}.npy", lab[:,:,i])
-            sum += 1
+        save(f"/home/meng/train_/images/image-{sum}.npy", img[:,:,i])
+        sum += 1
 
-print(sum)
-
-sum = valid
+sum = 0
 for index in range(len(vdir)):
     nifti = nib.load(os.path.join(vdir[index], "images",  (vfile[index] + ".nii.gz")))
     img = nifti.get_fdata()
-    
-    nifti = nib.load(os.path.join(vdir[index], "labels", (vfile[index] + ".nii.gz")))
-    lab = nifti.get_fdata()
-    
     for i in range(img.shape[2]):
-        if lab[:,:,i].max() == 1:
-            save(f"/home/meng/valid/images/image-{sum}.npy", img[:,:,i])
-            save(f"/home/meng/valid/labels/label-{sum}.npy", lab[:,:,i])
-            sum += 1
+        save(f"/home/meng/valid_/images/image-{sum}.npy", img[:,:,i])
+        sum += 1
 
-print(sum)
-'''
-sum = train
+sum = 0
 for index in range(len(tdir)):
     nifti = nib.load(os.path.join(tdir[index], "labels", (tfile[index] + ".nii.gz")))
     img = nifti.get_fdata()
@@ -110,15 +96,11 @@ for index in range(len(tdir)):
         save(f"/home/meng/train_/labels/label-{sum}.npy", img[:,:,i])
         sum += 1
 
-print(sum)
-
-sum = valid
+sum = 0
 for index in range(len(vdir)):
     nifti = nib.load(os.path.join(vdir[index], "labels", (vfile[index] + ".nii.gz")))
     img = nifti.get_fdata()
     for i in range(img.shape[2]):
         save(f"/home/meng/valid_/labels/label-{sum}.npy", img[:,:,i])
         sum += 1     
-
-print(sum)
 '''

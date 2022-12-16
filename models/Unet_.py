@@ -100,7 +100,8 @@ class UNet(nn.Module):
         return logits
 
 '''
-model = UNet(3, 1)
+model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
+        in_channels= 3, out_channels= 1, init_features= 32, pretrained= True)
 model = model.to('cuda')
 from torchsummary import summary
 summary_ = summary(model, (3, 192, 192))

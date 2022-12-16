@@ -93,12 +93,10 @@ def dataset(batch_size= 16):
         trans.ToPILImage(),
         trans.Resize([192, 192]),
         trans.ToTensor()])
-    ## 71232/17280
-    ## train_set = brainDataset(root= "/home/b09508011/train", transform= train_transform, file_number= 10000)
-    ## valid_set = brainDataset(root= "/home/b09508011/valid", transform= valid_transform, file_number= 1000)
-    ## 71424/17099
-    train_set = brainDataset(root= "/home/meng/train_", split= "train", transform= train_transform, file_number= 71231)
-    valid_set = brainDataset(root= "/home/meng/valid_", split= "test", transform= valid_transform, file_number= 17279)
+   
+    ## 28117 7172
+    train_set = brainDataset(root= "/home/meng/train", split= "train", transform= train_transform, file_number= 28138)
+    valid_set = brainDataset(root= "/home/meng/valid", split= "valid", transform= valid_transform, file_number= 7151)
 
     ## print(len(train_set), len(valid_set))
     train_loader = DataLoader(dataset= train_set, batch_size= batch_size, shuffle= True)
