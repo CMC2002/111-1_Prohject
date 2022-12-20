@@ -1,1 +1,8 @@
-# 111-1_Project
+![Intracranial Tumor Segmentation with Classification Before Segmentation Strategy_page-0001](https://user-images.githubusercontent.com/97693884/208740573-f9187916-2bf5-4deb-a551-2b7fdae05d9f.jpg)
+![Intracranial Tumor Segmentation with Classification Before Segmentation Strategy_page-0002](https://user-images.githubusercontent.com/97693884/208740583-409fdd28-39c4-4239-a1f0-55b11bb2ba51.jpg)
+![Intracranial Tumor Segmentation with Classification Before Segmentation Strategy_page-0003](https://user-images.githubusercontent.com/97693884/208740596-c08ddb0b-cd4e-4a90-9986-d3c7e0375709.jpg)
+![Intracranial Tumor Segmentation with Classification Before Segmentation Strategy_page-0004](https://user-images.githubusercontent.com/97693884/208740605-fc7873c2-c74b-4509-9df5-a275c8a8fb20.jpg)
+![Intracranial Tumor Segmentation with Classification Before Segmentation Strategy_page-0005](https://user-images.githubusercontent.com/97693884/208740612-fb4b017b-3276-45d2-8b10-c4308cdf1cdf.jpg)
+![Intracranial Tumor Segmentation with Classification Before Segmentation Strategy_page-0006](https://user-images.githubusercontent.com/97693884/208740620-54b2fa7a-8600-4c17-baea-083a430fa3c1.jpg)
+![Intracranial Tumor Segmentation with Classification Before Segmentation Strategy_page-0007](https://user-images.githubusercontent.com/97693884/208740627-ce393d92-b605-4a62-a599-0853249e07f4.jpg)
+![Intracranial Tumor Segmentation with Classification Before Segmentation Strategy_page-0008](https://user-images.githubusercontent.com/97693884/208740638-7f5dea69-3508-47b9-b00d-0a9020fa6f82.jpg)
